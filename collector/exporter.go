@@ -168,13 +168,14 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) {
 	if err != nil {
 		log.Errorln("Error pinging mysqld:", err)
 		e.mysqldUp.Set(0)
+		mysqlHealth = false
 		e.error.Set(1)
 		return
 	}
 	isUpRows.Close()
 
 	e.mysqldUp.Set(1)
-
+	mysqlHealth = true
 	ch <- prometheus.MustNewConstMetric(scrapeDurationDesc, prometheus.GaugeValue, time.Since(scrapeTime).Seconds(), "connection")
 
 	wg := &sync.WaitGroup{}

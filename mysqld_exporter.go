@@ -29,7 +29,7 @@ var (
 		"config.my-cnf",
 		"Path to .my.cnf file to read MySQL credentials from.",
 	).Default(path.Join(os.Getenv("HOME"), ".my.cnf")).String()
-	dsn         string
+	dsn string
 )
 
 // scrapers lists all possible collection methods and if they should be enabled by default.
@@ -179,8 +179,9 @@ func main() {
 		}
 	}
 	http.HandleFunc(*metricPath, prometheus.InstrumentHandlerFunc("metrics", newHandler(enabledScrapers)))
-        // add an endpoint for mysql health state
+	// add an endpoint for mysql health state
 	http.HandleFunc("/mysqlhealth", func(w http.ResponseWriter, r *http.Request) {
+
 		if collector.GetmysqlHealth() {
 			w.Write([]byte("ok: mysqldup"))
 		} else {
