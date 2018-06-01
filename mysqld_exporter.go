@@ -183,10 +183,10 @@ func main() {
 	http.HandleFunc("/-/healthy", func(w http.ResponseWriter, r *http.Request) {
 
 		if collector.GetmysqlHealth() {
-			w.Write([]byte("ok: mysqldup"))
+			w.Write([]byte("ok: mysql_up"))
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("critical: mysqldup"))
+			w.Write([]byte("critical: mysql_up"))
 		}
 	})
 
