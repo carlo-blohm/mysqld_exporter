@@ -240,7 +240,7 @@ func testMysqlHealthPageFail(t *testing.T, data bin) {
 	defer cmd.Process.Kill()
 
 	// Get the mysqlhealth page.
-	urlToGet := fmt.Sprintf("http://127.0.0.1:%d/mysqlhealth", data.port)
+	urlToGet := fmt.Sprintf("http://127.0.0.1:%d/-/healthy", data.port)
 	body, err := waitForBody(urlToGet)
 	if err != nil {
 		t.Fatal(err)
