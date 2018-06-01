@@ -39,6 +39,8 @@ var (
 		"exporter.log_slow_filter",
 		"Add a log_slow_filter to avoid slow query logging of scrapes. NOTE: Not supported by Oracle MySQL.",
 	).Default("false").Bool()
+
+	mysqlHealth bool
 )
 
 // Metric descriptors.
@@ -191,4 +193,8 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) {
 			ch <- prometheus.MustNewConstMetric(scrapeDurationDesc, prometheus.GaugeValue, time.Since(scrapeTime).Seconds(), label)
 		}(scraper)
 	}
+}
+
+func GetmysqlHealth() bool {
+	return mysqlHealth
 }
