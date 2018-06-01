@@ -180,7 +180,7 @@ func main() {
 	}
 	http.HandleFunc(*metricPath, prometheus.InstrumentHandlerFunc("metrics", newHandler(enabledScrapers)))
 	// add an endpoint for mysql health state
-	http.HandleFunc("/mysqlhealth", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/-/healthy", func(w http.ResponseWriter, r *http.Request) {
 
 		if collector.GetmysqlHealth() {
 			w.Write([]byte("ok: mysqldup"))
