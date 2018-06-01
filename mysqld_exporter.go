@@ -185,7 +185,7 @@ func main() {
 		if collector.GetmysqlHealth() {
 			w.Write([]byte("ok: mysql_up"))
 		} else {
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusServiceUnavailable)
 			w.Write([]byte("critical: mysql_up"))
 		}
 	})

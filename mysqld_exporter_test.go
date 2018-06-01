@@ -247,7 +247,7 @@ func testMysqlHealthPageFail(t *testing.T, data bin) {
 	}
 	got := string(body)
 
-	expected := `critical: mysqldup`
+	expected := `critical: mysql_up`
 	if got != expected {
 		t.Fatalf("got '%s' but expected '%s'", got, expected)
 	}
