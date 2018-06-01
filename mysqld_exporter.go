@@ -182,7 +182,7 @@ func main() {
 	// add an endpoint for mysql health state
 	http.HandleFunc("/-/healthy", func(w http.ResponseWriter, r *http.Request) {
 
-		if collector.GetmysqlHealth() {
+		if collector.GetMysqlHealth() {
 			w.Write([]byte("ok: mysql_up"))
 		} else {
 			w.WriteHeader(http.StatusServiceUnavailable)

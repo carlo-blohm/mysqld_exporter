@@ -196,6 +196,6 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) {
 	}
 }
 
-func GetmysqlHealth() bool {
+func GetMysqlHealth() bool {
 	return mysqlHealth
 }
