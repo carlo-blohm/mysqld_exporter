@@ -39,8 +39,6 @@ var (
 		"exporter.log_slow_filter",
 		"Add a log_slow_filter to avoid slow query logging of scrapes. NOTE: Not supported by Oracle MySQL.",
 	).Default("false").Bool()
-
-	mysqlHealth bool
 )
 
 // Metric descriptors.
@@ -62,6 +60,14 @@ type Exporter struct {
 	mysqldUp     prometheus.Gauge
 }
 
+// mysqlHealth provides the state for the healthy endpoint and a channel to write thread safe
+type mysqlHealth struct {
+	writerch chan bool
+	state    bool
+}
+
+var mH mysqlHealth
+
 // New returns a new MySQL exporter for the provided DSN.
 func New(dsn string, scrapers []Scraper) *Exporter {
 	// Setup extra params for the DSN, default to having a lock timeout.
@@ -77,6 +83,10 @@ func New(dsn string, scrapers []Scraper) *Exporter {
 		dsn = dsn + "?"
 	}
 	dsn += strings.Join(dsnParams, "&")
+
+	// use a channel to be thread safe
+	mH.writerch = make(chan bool)
+	go mH.set()
 
 	return &Exporter{
 		dsn:      dsn,
@@ -168,14 +178,16 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) {
 	if err != nil {
 		log.Errorln("Error pinging mysqld:", err)
 		e.mysqldUp.Set(0)
-		mysqlHealth = false
+
+		mH.writerch <- false
 		e.error.Set(1)
 		return
 	}
 	isUpRows.Close()
 
 	e.mysqldUp.Set(1)
-	mysqlHealth = true
+	mH.writerch <- true
+
 	ch <- prometheus.MustNewConstMetric(scrapeDurationDesc, prometheus.GaugeValue, time.Since(scrapeTime).Seconds(), "connection")
 
 	wg := &sync.WaitGroup{}
@@ -196,6 +208,14 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) {
 	}
 }
 
+// read the value from channel and store it in the state
+func (mH *mysqlHealth) set() {
+	for v := range mH.writerch {
+		mH.state = v
+	}
+}
+
+// export the MySQL health state
 func GetMysqlHealth() bool {
-	return mysqlHealth
+	return mH.state
 }
