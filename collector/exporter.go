@@ -72,7 +72,7 @@ var mH mysqlHealth
 func New(dsn string, scrapers []Scraper) *Exporter {
 	// Setup extra params for the DSN, default to having a lock timeout.
 	dsnParams := []string{fmt.Sprintf(timeoutParam, *exporterLockTimeout)}
-
+        fmt.Println("new")
 	if *slowLogFilter {
 		dsnParams = append(dsnParams, sessionSettingsParam)
 	}
@@ -84,9 +84,6 @@ func New(dsn string, scrapers []Scraper) *Exporter {
 	}
 	dsn += strings.Join(dsnParams, "&")
 
-	// use a channel to be thread safe
-	mH.writerch = make(chan bool)
-	go mH.set()
 
 	return &Exporter{
 		dsn:      dsn,
@@ -119,6 +116,8 @@ func New(dsn string, scrapers []Scraper) *Exporter {
 
 // Describe implements prometheus.Collector.
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
+        fmt.Println("new")
+
 	// We cannot know in advance what metrics the exporter will generate
 	// from MySQL. So we use the poor man's describe method: Run a collect
 	// and send the descriptors of all the collected metrics. The problem
@@ -143,6 +142,10 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.Collect(metricCh)
 	close(metricCh)
 	<-doneCh
+	// use a channel to be thread safe
+	mH.writerch = make(chan bool)
+	go mH.set()
+
 }
 
 // Collect implements prometheus.Collector.
