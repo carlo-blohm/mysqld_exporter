@@ -182,7 +182,7 @@ func main() {
 			enabledScrapers = append(enabledScrapers, scraper)
 		}
 	}
-	http.HandleFunc(*metricPath, prometheus.InstrumentHandlerFunc("metrics", newHandler(enabledScrapers, health)))
+	http.HandleFunc(*metricPath, prometheus.InstrumentHandlerFunc("metrics", newHandler(enabledScrapers, &health)))
 	// Add an endpoint for mysql health state.
 	http.HandleFunc("/-/mysqld_healthy", func(w http.ResponseWriter, r *http.Request) {
 		if err := health.Get(); err != nil {
