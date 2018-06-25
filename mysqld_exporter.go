@@ -179,14 +179,15 @@ func main() {
 		}
 	}
 	http.HandleFunc(*metricPath, prometheus.InstrumentHandlerFunc("metrics", newHandler(enabledScrapers)))
-	// add an endpoint for mysql health state
-	http.HandleFunc("/-/healthy", func(w http.ResponseWriter, r *http.Request) {
+	// Add an endpoint for mysql health state.
+	http.HandleFunc("/-/mysqld_healthy", func(w http.ResponseWriter, r *http.Request) {
 
-		if collector.GetMysqlHealth() {
-			w.Write([]byte("ok: mysql_up"))
-		} else {
+		if err := collector.MysqlHealth(); err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			w.Write([]byte("critical: mysql_up"))
+			fmt.Fprint(w, err)
+		} else {
+			w.Write([]byte("ok: mysql_up"))
 		}
 	})
 
