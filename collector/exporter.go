@@ -115,7 +115,7 @@ func New(dsn string, scrapers []Scraper) *Exporter {
 
 // Describe implements prometheus.Collector.
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
-	fmt.Println("new")
+	fmt.Println("describe")
 	// We cannot know in advance what metrics the exporter will generate
 	// from MySQL. So we use the poor man's describe method: Run a collect
 	// and send the descriptors of all the collected metrics. The problem
