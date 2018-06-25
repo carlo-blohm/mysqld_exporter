@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -91,7 +90,7 @@ func init() {
 	prometheus.MustRegister(version.NewCollector("mysqld_exporter"))
 }
 
-func newHandler(scrapers []collector.Scraper, health *mysqlHealth) http.HandlerFunc {
+func newHandler(scrapers []collector.Scraper, health *collector.MysqlHealth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filteredScrapers := scrapers
 		params := r.URL.Query()["collect[]"]
@@ -186,7 +185,7 @@ func main() {
 	http.HandleFunc(*metricPath, prometheus.InstrumentHandlerFunc("metrics", newHandler(enabledScrapers)))
 	// Add an endpoint for mysql health state.
 	http.HandleFunc("/-/mysqld_healthy", func(w http.ResponseWriter, r *http.Request) {
-		if err := mysqlHealth.Get(); err != nil {
+		if err := health.Get(); err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			w.Write([]byte("critical: mysql_up"))
 			fmt.Fprint(w, err)
