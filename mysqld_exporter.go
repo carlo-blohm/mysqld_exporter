@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -90,7 +91,7 @@ func init() {
 	prometheus.MustRegister(version.NewCollector("mysqld_exporter"))
 }
 
-func newHandler(scrapers []collector.Scraper) http.HandlerFunc {
+func newHandler(scrapers []collector.Scraper, health *mysqlHealth) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		filteredScrapers := scrapers
 		params := r.URL.Query()["collect[]"]
@@ -112,7 +113,8 @@ func newHandler(scrapers []collector.Scraper) http.HandlerFunc {
 		}
 
 		registry := prometheus.NewRegistry()
-		registry.MustRegister(collector.New(dsn, filteredScrapers))
+		exporter := collector.New(dsn, filteredScrapers)
+		registry.MustRegister(exporter)
 
 		gatherers := prometheus.Gatherers{
 			prometheus.DefaultGatherer,
@@ -121,10 +123,13 @@ func newHandler(scrapers []collector.Scraper) http.HandlerFunc {
 		// Delegate http serving to Prometheus client library, which will call collector.Collect.
 		h := promhttp.HandlerFor(gatherers, promhttp.HandlerOpts{})
 		h.ServeHTTP(w, r)
+		health.Set(exporter.MysqlHealth())
 	}
 }
 
 func main() {
+	health := collector.MysqlHealth{}
+
 	// Generate ON/OFF flags for all scrapers.
 	scraperFlags := map[collector.Scraper]*bool{}
 	for scraper, enabledByDefault := range scrapers {
@@ -181,8 +186,7 @@ func main() {
 	http.HandleFunc(*metricPath, prometheus.InstrumentHandlerFunc("metrics", newHandler(enabledScrapers)))
 	// Add an endpoint for mysql health state.
 	http.HandleFunc("/-/mysqld_healthy", func(w http.ResponseWriter, r *http.Request) {
-
-		if err := collector.MysqlHealth(); err != nil {
+		if err := mysqlHealth.Get(); err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			w.Write([]byte("critical: mysql_up"))
 			fmt.Fprint(w, err)

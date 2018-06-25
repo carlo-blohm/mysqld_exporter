@@ -58,10 +58,23 @@ type Exporter struct {
 	totalScrapes prometheus.Counter
 	scrapeErrors *prometheus.CounterVec
 	mysqldUp     prometheus.Gauge
-	mysqlHealth  struct {
-		sync.Mutex
-		state error
-	}
+	mysqlHealth  MysqlHealth
+}
+type MysqlHealth struct {
+	sync.Mutex
+	state error
+}
+
+func (m *mysqlHealth) Set(state error) {
+	m.Lock()
+	m.state = state
+	m.Unlock()
+}
+
+func (m *mysqlHealth) Get() error {
+	m.Lock()
+	defer m.Unlock()
+	return m.state
 }
 
 // New returns a new MySQL exporter for the provided DSN.
@@ -172,9 +185,7 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) {
 		e.mysqldUp.Set(0)
 
 		// Set the error state to err, mysqld is down.
-		e.mysqlHealth.Lock()
-		e.mysqlHealth.state = err
-		e.mysqlHealth.Unlock()
+		e.mysqlHealth.Set(err)
 
 		e.error.Set(1)
 		return
@@ -183,9 +194,7 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) {
 
 	e.mysqldUp.Set(1)
 	// Set the error state to nil, mysqld is up.
-	e.mysqlHealth.Lock()
-	e.mysqlHealth.state = nil
-	e.mysqlHealth.Unlock()
+	e.mysqlHealth.Set(nil)
 
 	ch <- prometheus.MustNewConstMetric(scrapeDurationDesc, prometheus.GaugeValue, time.Since(scrapeTime).Seconds(), "connection")
 
@@ -209,7 +218,6 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) {
 
 // MysqlHealth exports the MySQL health state.
 func (e *Exporter) MysqlHealth() error {
-	e.mysqlHealth.Lock()
-	defer e.mysqlHealth.Unlock()
-	return e.mysqlHealth.state
+
+	return e.mysqlHealth.Get()
 }
