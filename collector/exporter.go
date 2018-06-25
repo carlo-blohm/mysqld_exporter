@@ -62,8 +62,8 @@ type Exporter struct {
 
 // mysqlHealth provides the state for the healthy endpoint and a channel to write thread safe
 type mysqlHealth struct {
-	mux      sync.Mutex
-	state    bool
+	mux   sync.Mutex
+	state bool
 }
 
 var mH mysqlHealth
