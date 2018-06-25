@@ -240,7 +240,7 @@ func testMysqlHealthPageFail(t *testing.T, data bin) {
 	defer cmd.Process.Kill()
 
 	// Get the mysqlhealth page.
-	urlToGet := fmt.Sprintf("http://127.0.0.1:%d/-/healthy", data.port)
+	urlToGet := fmt.Sprintf("http://127.0.0.1:%d/-/mysqld_healthy", data.port)
 	body, err := waitForBody(urlToGet)
 	if err != nil {
 		t.Fatal(err)
@@ -248,7 +248,7 @@ func testMysqlHealthPageFail(t *testing.T, data bin) {
 	got := string(body)
 
 	expected := `critical: mysql_up`
-	if got != expected {
+	if strings.HasPrefix(got, expected) {
 		t.Fatalf("got '%s' but expected '%s'", got, expected)
 	}
 }
