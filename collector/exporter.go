@@ -62,17 +62,11 @@ type Exporter struct {
 
 // mysqlHealth provides the state for the healthy endpoint and a channel to write thread safe
 type mysqlHealth struct {
-	writerch chan bool
+	mux      sync.Mutex
 	state    bool
 }
 
 var mH mysqlHealth
-
-func init() {
-	// use a channel to be thread safe
-	mH.writerch = make(chan bool)
-	go mH.set()
-}
 
 // New returns a new MySQL exporter for the provided DSN.
 func New(dsn string, scrapers []Scraper) *Exporter {
@@ -181,14 +175,14 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) {
 		log.Errorln("Error pinging mysqld:", err)
 		e.mysqldUp.Set(0)
 
-		mH.writerch <- false
+		mH.set(false)
 		e.error.Set(1)
 		return
 	}
 	isUpRows.Close()
 
 	e.mysqldUp.Set(1)
-	mH.writerch <- true
+	mH.set(true)
 
 	ch <- prometheus.MustNewConstMetric(scrapeDurationDesc, prometheus.GaugeValue, time.Since(scrapeTime).Seconds(), "connection")
 
@@ -211,13 +205,15 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) {
 }
 
 // read the value from channel and store it in the state
-func (mH *mysqlHealth) set() {
-	for v := range mH.writerch {
-		mH.state = v
-	}
+func (mH *mysqlHealth) set(value bool) {
+	mH.mux.Lock()
+	mH.state = value
+	mH.mux.Unlock()
 }
 
 // export the MySQL health state
 func GetMysqlHealth() bool {
+	mH.mux.Lock()
+	defer mH.mux.Unlock()
 	return mH.state
 }
