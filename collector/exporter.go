@@ -68,6 +68,12 @@ type mysqlHealth struct {
 
 var mH mysqlHealth
 
+func init() {
+	// use a channel to be thread safe
+	mH.writerch = make(chan bool)
+	go mH.set()
+}
+
 // New returns a new MySQL exporter for the provided DSN.
 func New(dsn string, scrapers []Scraper) *Exporter {
 	// Setup extra params for the DSN, default to having a lock timeout.
@@ -83,10 +89,6 @@ func New(dsn string, scrapers []Scraper) *Exporter {
 		dsn = dsn + "?"
 	}
 	dsn += strings.Join(dsnParams, "&")
-
-	// use a channel to be thread safe
-	mH.writerch = make(chan bool)
-	go mH.set()
 
 	return &Exporter{
 		dsn:      dsn,
