@@ -88,7 +88,7 @@ func New(dsn string, scrapers []Scraper) *Exporter {
 	// use a channel to be thread safe
 	mH.writerch = make(chan bool)
 	go mH.set()
-        defer close(mH)
+        defer close(mH.writerch)
 
 	return &Exporter{
 		dsn:      dsn,
