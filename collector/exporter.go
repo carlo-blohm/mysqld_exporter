@@ -68,6 +68,11 @@ type mysqlHealth struct {
 
 var mH mysqlHealth
 
+// use a channel to be thread safe
+mH.writerch = make(chan bool)
+go mH.set()
+
+
 // New returns a new MySQL exporter for the provided DSN.
 func New(dsn string, scrapers []Scraper) *Exporter {
 	// Setup extra params for the DSN, default to having a lock timeout.
@@ -140,9 +145,6 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.Collect(metricCh)
 	close(metricCh)
 	<-doneCh
-	// use a channel to be thread safe
-	mH.writerch = make(chan bool)
-	go mH.set()
 }
 
 // Collect implements prometheus.Collector.
