@@ -65,13 +65,13 @@ type MysqlHealth struct {
 	state error
 }
 
-func (m *mysqlHealth) Set(state error) {
+func (m *MysqlHealth) Set(state error) {
 	m.Lock()
 	m.state = state
 	m.Unlock()
 }
 
-func (m *mysqlHealth) Get() error {
+func (m *MysqlHealth) Get() error {
 	m.Lock()
 	defer m.Unlock()
 	return m.state
